@@ -5,7 +5,6 @@ from typing import Dict, Optional, Tuple
 
 from .backbone import ResNetBackbone
 from .decoder import UPerDecoder
-# from .heads import build_segmentation_head  <-- 더 이상 사용하지 않음
 
 
 class ParsingModel(nn.Module):
@@ -18,7 +17,6 @@ class ParsingModel(nn.Module):
             fpn_channels: int = 256,
             ppm_channels: int = 512,
             decoder_channels: int = 512,
-            head_type: str = 'multiscale',  # 사용하지 않음
             dropout: float = 0.2,
             freeze_backbone: bool = False,
             freeze_bn: bool = False

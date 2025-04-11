@@ -1,29 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+"""
+TryOnAPI 메인 애플리케이션
+"""
+
 import uvicorn
+import os
 
-from app.routers import tryon, mediapipe, segmentation, diffusion
+from app import create_app
 
-app = FastAPI(title="TryOn API", description="Virtual Try-On API using AI models")
-
-# CORS 설정
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # 실제 배포 시 특정 도메인으로 제한하세요
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 라우터 등록
-app.include_router(tryon.router, prefix="/api/tryon", tags=["tryon"])
-app.include_router(mediapipe.router, prefix="/api/mediapipe", tags=["mediapipe"])
-app.include_router(segmentation.router, prefix="/api/segmentation", tags=["segmentation"])
-app.include_router(diffusion.router, prefix="/api/diffusion", tags=["diffusion"])
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to TryOn API"}
+# FastAPI 앱 생성
+app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # 환경 변수에서 포트 가져오기, 기본값은 8000
+    port = int(os.environ.get("PORT", 8000))
+    
+    # 개발 모드에서 실행
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

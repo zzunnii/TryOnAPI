@@ -20,7 +20,7 @@ class ResNetBackbone(nn.Module):
         super().__init__()
 
         # Load pretrained ResNet101
-        resnet = models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1)
+        resnet = models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1 if pretrained else None)
 
         # Extract ResNet stages
         self.conv1 = nn.Sequential(
@@ -101,6 +101,7 @@ class ResNetBackbone(nn.Module):
             'layer4': c4,
         }
         return features
+        
     def load_state_dict(self, state_dict: Dict, strict: bool = True):
         """Custom load function that can handle both full and partial state dicts."""
         if strict:

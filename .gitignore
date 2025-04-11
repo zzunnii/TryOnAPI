@@ -47,3 +47,10 @@ logs/
 
 # OS
 .DS_Store
+
+#모델
+.pth
+
+.json
+.jpg
+.png
