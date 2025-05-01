@@ -14,9 +14,6 @@ class Settings(BaseModel):
     # 모델 관련 설정
     MEDIAPIPE_MODEL_PATH: str = os.path.join(BASE_DIR, "models/mediapipe")
     SEGMENTATION_MODEL_PATH: str = os.path.join(BASE_DIR, "models")
-    DIFFUSION_MODEL_256_PATH: str = os.path.join(BASE_DIR, "models/diffusion_256")
-    DIFFUSION_MODEL_512_PATH: str = os.path.join(BASE_DIR, "models/diffusion_512")
-    DIFFUSION_MODEL_1024_PATH: str = os.path.join(BASE_DIR, "models/diffusion_1024")
     
     # 이미지 처리 관련 설정
     TEMP_DIR: str = os.path.join(BASE_DIR, "temp")

@@ -9,42 +9,9 @@ from app.services.diffusion_service import process_diffusion_256, process_diffus
 router = APIRouter()
 settings = get_settings()
 
-@router.post("/256")
-async def diffusion_256(
-    agnostic_id: str,
-    target_clothing_id: str,
-    prompt: Optional[str] = None
-):
-    """
-    256x256 크기의 Diffusion 모델 처리
-    """
-    try:
-        # 구현 예정: agnostic_id와 target_clothing_id를 사용하여 256x256 Diffusion 모델 처리
-        # result_path = process_diffusion_256(agnostic_path, target_clothing_path, prompt)
-        
-        return {"message": "256x256 Diffusion model processing will be implemented"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/512")
-async def diffusion_512(
-    agnostic_id: str,
-    target_clothing_id: str,
-    prompt: Optional[str] = None
-):
-    """
-    512x512 크기의 Diffusion 모델 처리
-    """
-    try:
-        # 구현 예정: agnostic_id와 target_clothing_id를 사용하여 512x512 Diffusion 모델 처리
-        # result_path = process_diffusion_512(agnostic_path, target_clothing_path, prompt)
-        
-        return {"message": "512x512 Diffusion model processing will be implemented"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/1024")
-async def diffusion_1024(
+async def diffusion(
     agnostic_id: str,
     target_clothing_id: str,
     prompt: Optional[str] = None
