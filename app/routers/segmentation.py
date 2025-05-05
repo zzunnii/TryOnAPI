@@ -1,3 +1,4 @@
+import cv2
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional, Dict, Any, List

@@ -54,3 +54,11 @@ logs/
 .json
 .jpg
 .png
+
+**/.claude/settings.local.json
+
+!app/models
+IDM-VTON-main
+models
+*.jpg
+*.png

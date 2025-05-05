@@ -3,7 +3,7 @@ sys.path.append('./')
 from PIL import Image
 
 from models.tryon_pipeline import StableDiffusionXLInpaintPipeline as TryonPipeline
-from models.unet_hacked_garment import UNet2DConditionModel as UNet2DConditionModel_ref
+from models.unet_hacked_garmnet import UNet2DConditionModel as UNet2DConditionModel_ref
 from models.unet_hacked_tryon import UNet2DConditionModel
 from transformers import (
     CLIPImageProcessor,

@@ -38,11 +38,13 @@ def create_app():
     app.mount("/output", StaticFiles(directory=settings.OUTPUT_DIR), name="output")
     
     # 라우터 등록
-    from app.routers import human_parsing, segmentation
+    from app.routers import human_parsing, segmentation, tryon, mediapipe
     
     # 라우터 포함
     app.include_router(segmentation.router, prefix=settings.API_V1_STR, tags=["Segmentation"])
     app.include_router(human_parsing.router, prefix=settings.API_V1_STR, tags=["Human Parsing"])
+    app.include_router(tryon.router, prefix=settings.API_V1_STR + "/tryon", tags=["Virtual Try-On"])
+    app.include_router(mediapipe.router, prefix=settings.API_V1_STR + "/mediapipe", tags=["MediaPipe"])
     
     # 루트 엔드포인트
     @app.get("/")

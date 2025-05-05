@@ -31,6 +31,7 @@ class HumanParsingProcessor:
         self.num_classes = num_classes
         self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.input_size = input_size or (320, 640)  # 기본값 설정, 실제로는 동적으로 사용됨
+        print(f"[INFO] 세그멘테이션 기본 입력 크기: {self.input_size[0]}x{self.input_size[1]}")
 
         # 체크포인트 경로가 없으면 기본 경로 사용
         if checkpoint_path is None:
@@ -223,6 +224,9 @@ class HumanParsingProcessor:
 
     def process_and_segment(self, image_rgb, canvas_size=None):
         """배경 제거 -> 세그멘테이션 -> 원본 좌표 변환 파이프라인"""
+        import time
+        start_time = time.time()
+        
         # 이미지 로드
         if isinstance(image_rgb, str):
             original_image = cv2.imread(image_rgb)
@@ -237,10 +241,15 @@ class HumanParsingProcessor:
 
         # canvas_size가 None이면 원본 이미지 크기 사용
         if canvas_size is None:
-            canvas_size = (orig_w, orig_h)  # (width, height)
-
+            # 먼저 세그멘테이션 모델 입력용 320x640 크기로 설정
+            canvas_size = self.input_size
+            print(f"[INFO] 세그멘테이션 크기로 조정: {canvas_size[0]}x{canvas_size[1]}")
+        
         # canvas_size 형식 확인 (항상 width, height 순서로 사용)
         print(f"[INFO] Using canvas size: {canvas_size[0]}x{canvas_size[1]}")
+        
+        print(f"[DEBUG] 이미지 로드 완료: {time.time() - start_time:.2f}초")
+        birefnet_start = time.time()
 
         # 배경 제거 및 리사이징
         processed_image, person_mask, original_img, original_mask, transform_info = process_image_for_segmentation(
@@ -249,6 +258,8 @@ class HumanParsingProcessor:
             self.dataset_stats,
             final_canvas=canvas_size
         )
+        
+        print(f"[DEBUG] BiRefNet 처리 완료: {time.time() - birefnet_start:.2f}초")
 
         if transform_info is None:
             # 사람/물체가 감지되지 않은 경우
@@ -256,24 +267,33 @@ class HumanParsingProcessor:
             return None, None, None, None
 
         # 세그멘테이션 예측
+        predict_start = time.time()
         pred_mask, _ = self.predict(processed_image)
+        print(f"[DEBUG] 세그멘테이션 예측 완료: {time.time() - predict_start:.2f}초")
 
         # 후처리
+        postprocess_start = time.time()
         clean_pred_mask = self.remove_small_regions(pred_mask, min_area=20)
         smoothed_mask = self.smooth_boundaries(clean_pred_mask)
+        print(f"[DEBUG] 마스크 후처리 완료: {time.time() - postprocess_start:.2f}초")
 
         # 안티앨리어싱 및 결과 생성
+        edge_start = time.time()
         antialiased_image = self.apply_edge_processing(processed_image, person_mask, kernel_size=5, sigma=1.5)
+        print(f"[DEBUG] 안티앨리어싱 완료: {time.time() - edge_start:.2f}초")
 
         # 시각화를 위한 오버레이 생성 (처리된 이미지에 대한)
+        vis_start = time.time()
         overlay_processed = self.visualize_segmentation(
             image=antialiased_image,
             mask=smoothed_mask,
             alpha=0.7
         )
+        print(f"[DEBUG] 오버레이 생성 완료: {time.time() - vis_start:.2f}초")
 
         # === 여기서부터 마스크를 원본 좌표계로 변환하는 로직 추가 ===
-
+        transform_start = time.time()
+        
         # 캔버스 위치 정보
         x, y, pw, ph = transform_info['canvas_placement']
 
@@ -302,6 +322,9 @@ class HumanParsingProcessor:
             mask=orig_mask,
             alpha=0.7
         )
+        
+        print(f"[DEBUG] 원본 좌표 변환 완료: {time.time() - transform_start:.2f}초")
+        print(f"[DEBUG] 전체 처리 시간: {time.time() - start_time:.2f}초")
 
         return processed_image, smoothed_mask, orig_mask, overlay_original
 

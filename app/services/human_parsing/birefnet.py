@@ -22,20 +22,40 @@ def load_dataset_stats(stats_file):
 
 def setup_model(token=None):
     """Hugging Face에서 BiRefNet_HR 모델 로드"""
+    import time
+    start_time = time.time()
+    
     print("[INFO] Loading BiRefNet_HR model...")
     try:
+        # 로컬 모델 경로 확인 (캐싱된 모델이 있는지)
+        local_path = os.path.expanduser("~/.cache/huggingface/hub/models--ZhengPeng7--BiRefNet_HR")
+        if os.path.exists(local_path):
+            print(f"[INFO] 로컬 캐시 모델 찾음: {local_path}")
+            local_time = time.time()
+            print(f"[DEBUG] 로컬 캐시 확인 시간: {local_time - start_time:.2f}초")
+        else:
+            print("[INFO] 로컬 캐시 모델 없음, Hugging Face에서 다운로드 필요")
+        
+        load_start = time.time()
         model = AutoModelForImageSegmentation.from_pretrained(
             'ZhengPeng7/BiRefNet_HR',
             trust_remote_code=True,
             token=token
         )
+        load_time = time.time() - load_start
+        print(f"[DEBUG] 모델 로드 시간: {load_time:.2f}초")
+        
+        device_start = time.time()
         if torch.cuda.is_available():
             model = model.to('cuda').half()
             model.eval()
-            print("[INFO] Model loaded on GPU (FP16).")
+            print(f"[INFO] Model loaded on GPU (FP16). 소요 시간: {time.time() - device_start:.2f}초")
         else:
             model.eval()
             print("[INFO] Model loaded on CPU.")
+            
+        total_time = time.time() - start_time
+        print(f"[DEBUG] 모델 준비 총 시간: {total_time:.2f}초")
         return model
     except Exception as e:
         print(f"[ERROR] Failed to load BiRefNet_HR model: {e}")
@@ -51,6 +71,14 @@ def load_image_with_exif(np_image):
 
 def remove_background(model, np_image, threshold=0.5, image_size=(1024, 1024)):
     """BiRefNet_HR 모델로 배경 제거 -> RGBA 및 마스크 반환"""
+    import time
+    start_time = time.time()
+    
+    # 원본 크기 저장
+    orig_h, orig_w = np_image.shape[:2]
+    print(f"[DEBUG] 원본 이미지 크기: {orig_w}x{orig_h}")
+    
+    # 모델 입력용 1024x1024 크기로 리사이징
     pil_image = Image.fromarray(np_image)
     transform = transforms.Compose([
         transforms.Resize(image_size),
@@ -58,22 +86,38 @@ def remove_background(model, np_image, threshold=0.5, image_size=(1024, 1024)):
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
     inp = transform(pil_image).unsqueeze(0)
+    
+    preprocess_time = time.time()
+    print(f"[DEBUG] 이미지 전처리 시간: {preprocess_time - start_time:.2f}초")
+    
+    device_start = time.time()
     if torch.cuda.is_available():
         inp = inp.to('cuda').half()
-
+        print(f"[DEBUG] 텐서를 GPU로 이동: {time.time() - device_start:.2f}초 (CUDA 사용)")
+    else:
+        print(f"[DEBUG] GPU 사용 불가: CPU 사용")
+    
+    inference_start = time.time()
     with torch.no_grad():
         pred = model(inp)
         if isinstance(pred, (list, tuple)):
             pred = pred[-1]
         pred = torch.sigmoid(pred).cpu().squeeze().numpy()
+    inference_time = time.time() - inference_start
+    print(f"[DEBUG] 모델 추론 시간: {inference_time:.2f}초")
 
-    orig_h, orig_w = np_image.shape[:2]
+    postprocess_start = time.time()
+    # 예측 결과를 원본 이미지 크기로 리사이징
     mask = cv2.resize((pred * 255).astype(np.uint8), (orig_w, orig_h))
     bin_mask = (mask > threshold * 255).astype(np.uint8) * 255
 
     rgba = np.zeros((orig_h, orig_w, 4), dtype=np.uint8)
     rgba[:, :, :3] = np_image
     rgba[:, :, 3] = bin_mask
+    
+    print(f"[DEBUG] 후처리 시간: {time.time() - postprocess_start:.2f}초")
+    print(f"[DEBUG] 배경 제거 총 시간: {time.time() - start_time:.2f}초")
+    
     return rgba, bin_mask
 
 def extract_person_bbox(rgba_image):
@@ -136,14 +180,22 @@ def place_by_dataset_center(canvas_size, person_rgba, dataset_stats, bg_color=(2
 
 def process_image_for_segmentation(model, np_image, dataset_stats, final_canvas=(320, 640)):
     """배경 제거 및 크기 조정 후 입력 이미지 생성 - 파싱모델 입력용"""
+    import time
+    start_time = time.time()
+    
     print("[INFO] Processing image with BiRefNet...")
     original_img = load_image_with_exif(np_image)
-
+    print(f"[DEBUG] Image EXIF 처리 완료: {time.time() - start_time:.2f}초")
+    
     # 배경 제거
+    bg_start = time.time()
     rgba, original_mask = remove_background(model, original_img, threshold=0.5)
+    print(f"[DEBUG] 배경 제거 완료: {time.time() - bg_start:.2f}초")
 
     # 사람 영역 바운딩 박스 추출
+    bbox_start = time.time()
     person_rgba, orig_bbox = extract_person_bbox(rgba)
+    print(f"[DEBUG] 바운딩 박스 추출 완료: {time.time() - bbox_start:.2f}초")
 
     if person_rgba is None:
         print("[WARN] No person found, returning blank canvas.")
@@ -156,28 +208,36 @@ def process_image_for_segmentation(model, np_image, dataset_stats, final_canvas=
     orig_x, orig_y, orig_x2, orig_y2 = orig_bbox
     orig_w, orig_h = original_img.shape[1], original_img.shape[0]
     obj_w, obj_h = orig_x2 - orig_x + 1, orig_y2 - orig_y + 1
+    
+    print(f"[DEBUG] 사람 영역 크기: {obj_w}x{obj_h}")
 
     # 스케일링 적용 (데이터셋 통계 기반)
+    scaling_start = time.time()
     extra_scale = 1.2
     scaled_rgba, scaled_size = scale_person_by_dataset_stats(
         person_rgba, final_canvas, dataset_stats, extra_scale
     )
     target_w, target_h = scaled_size
+    print(f"[DEBUG] 스케일링 완료: {time.time() - scaling_start:.2f}초, 결과 크기: {target_w}x{target_h}")
 
     # 스케일 계수 계산
     scale_w = target_w / obj_w
     scale_h = target_h / obj_h
 
     # 최종 이미지 생성 (캔버스에 배치)
+    placement_start = time.time()
     final, placement = place_by_dataset_center(final_canvas, scaled_rgba, dataset_stats)
+    print(f"[DEBUG] 캔버스 배치 완료: {time.time() - placement_start:.2f}초")
 
     # 최종 마스크 생성
+    mask_start = time.time()
     final_mask = np.zeros((final_canvas[1], final_canvas[0]), dtype=np.uint8)
     x, y, pw, ph = placement
     if pw > 0 and ph > 0:
         final_mask[y:y + ph, x:x + pw] = cv2.resize(
             scaled_rgba[:, :, 3], (pw, ph), interpolation=cv2.INTER_NEAREST
         )
+    print(f"[DEBUG] 마스크 생성 완료: {time.time() - mask_start:.2f}초")
 
     # 변환 정보 저장 - 역변환에 필요한 모든 정보 포함
     transform_info = {
@@ -189,5 +249,7 @@ def process_image_for_segmentation(model, np_image, dataset_stats, final_canvas=
         'canvas_size': final_canvas,             # 캔버스 크기
         'scale_factors': (scale_w, scale_h),     # 스케일 계수
     }
+    
+    print(f"[DEBUG] BiRefNet 전체 처리 시간: {time.time() - start_time:.2f}초")
 
     return final, final_mask, original_img, original_mask, transform_info
