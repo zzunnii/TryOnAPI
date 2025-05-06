@@ -1,107 +1,177 @@
 # TryOnAPI
 
-가상 의류 피팅을 위한 FastAPI 기반 API 서버. 인체 파싱, 배경 제거, 세그멘테이션 등의 기능을 제공합니다.
+TryOnAPI는 최첨단 딥러닝 모델을 활용하여 사실적인 의류 가상 피팅을 가능하게 하는 종합적인 API 서비스입니다.
 
-## 주요 기능
+## Features
 
-1. **인체 파싱**: ZhengPeng7/BiRefNet_HR 모델을 사용하여 이미지에서 사람을 인식하고 배경을 제거합니다.
-2. **세그멘테이션**: 인체 구성 요소(머리카락, 얼굴, 상의, 하의 등)를 세그멘테이션하여 20개 클래스로 분류합니다.
-3. **JSON 출력**: 세그멘테이션 결과를 JSON 형태로 반환하여 다른 애플리케이션에서 활용할 수 있습니다.
+- IDM-VTON 모델을 활용한 가상 피팅
+- 인체 파싱 및 세그멘테이션
+- DensePose 분석
+- 포즈 추정 (OpenPose)
+- 다양한 의류 카테고리에 대한 마스크 생성
+- 이미지 처리 유틸리티
+- RESTful API 인터페이스
 
-## 설치 방법
+## System Requirements
+
+- Python 3.8 이상
+- CUDA 호환 GPU (권장)
+- 최적의 성능을 위한 8GB 이상의 VRAM
+- 16GB 이상의 RAM
+
+## Installation
+
+### Setup Environment
 
 ```bash
-# 저장소 클론
-git clone https://github.com/username/TryOnAPI.git
-cd TryOnAPI
+# Conda 환경 생성
+conda create -n tryonapi python=3.8
+conda activate tryonapi
 
-# 필요한 패키지 설치
+# 요구사항 설치
 pip install -r requirements.txt
-
-# BiRefNet_HR 모델 다운로드 (Hugging Face)
-# huggingface-cli login  # 필요한 경우
-# 로그인 후 모델 파일이 자동으로 다운로드됩니다
 ```
 
-## 사용 방법
+### Required Dependencies
 
-### 서버 실행
+```
+Pillow==11.1.0
+opencv-python==4.11.0
+diffusers==0.25.1
+einops==0.8.1
+fastapi==0.115.12
+fvcore==0.1.5.post20221221
+matplotlib==3.10.1
+numpy==1.26.1
+onnxruntime==1.21.1
+pycocotools==2.0.8
+pydantic==2.11.3
+pydantic_settings==2.8.1
+torch==2.6.0
+torchvision==0.21.0
+transformers==4.39.3
+uvicorn==0.23.2
+PyYAML==6.0.2
+```
+
+### Model Setup
+
+필요한 모델 체크포인트 다운로드:
 
 ```bash
-# 개발 서버 실행
-python main.py
-
-# 또는 uvicorn으로 실행
-uvicorn main:app --reload
+# 모델 설정 스크립트 실행
+python setup_model.py
 ```
 
-### API 엔드포인트
+## Project Structure
 
-#### 인체 파싱
+```
+api/
+├── core/                # 핵심 설정
+├── densepose/           # DensePose 모듈
+├── diffusionModels/     # IDM-VTON 확산 모델
+├── models/              # 모델 체크포인트 디렉토리
+├── output/              # 생성된 이미지의 출력 디렉토리
+├── preprocess/          # 전처리 모듈
+│   ├── humanparsing/    # 인체 파싱 모델
+│   └── openpose/        # OpenPose 구현
+├── routers/             # API 엔드포인트용 FastAPI 라우터
+├── services/            # 모델 서비스
+│   ├── densepose_service.py
+│   └── model_service.py
+├── utils/               # 유틸리티 함수
+│   └── image_utils.py   # 이미지 처리 유틸리티
+└── main.py              # 메인 애플리케이션 진입점
+```
 
-- **URL**: `/api/human-parsing/process`
-- **메서드**: POST
-- **형식**: multipart/form-data
-- **파라미터**: 
-  - `image`: 이미지 파일
-  - `use_firebase`: Firebase 사용 여부 (기본값: false)
-  - `save_visualization`: 시각화 이미지 저장 여부 (기본값: true)
-- **응답**: 
-  ```json
-  {
-    "file_id": "unique-id",
-    "original_filename": "example.jpg",
-    "json_path": "/output/human_parsing/example_mask.json",
-    "class_count": 18,
-    "image_size": {
-      "width": 1080,
-      "height": 1920
-    },
-    "visualization_path": "/output/human_parsing/example_visualization.png",
-    "message": "이미지 처리 완료",
-    "success": true
-  }
-  ```
+## Usage
 
-### 테스트 스크립트 실행
+### Starting the API Server
 
 ```bash
-python test_function.py --image path/to/image.jpg --visualize
+cd api
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## 디렉토리 구조
+### API Documentation
+
+서버가 실행되면 대화형 API 문서에 접근할 수 있습니다:
 
 ```
-TryOnAPI/
-├── app/                     # FastAPI 애플리케이션
-│   ├── core/                # 핵심 설정 및 유틸리티
-│   │   ├── config.py        # 애플리케이션 설정
-│   ├── models/              # 모델 정의
-│   │   └── parsingModels/   # 인체 파싱 모델
-│   ├── routers/             # API 라우터
-│   │   ├── human_parsing.py # 인체 파싱 API 라우트
-│   │   └── segmentation.py  # 세그멘테이션 API 라우트
-│   └── services/            # 비즈니스 로직 서비스
-│       ├── human_parsing/   # 인체 파싱 서비스
-│       └── segmentation_service.py # 세그멘테이션 서비스
-├── models/                  # 모델 체크포인트
-├── output/                  # 처리 결과 저장
-├── temp/                    # 임시 파일 저장
-├── utils/                   # 공통 유틸리티
-│   ├── firebase_utils.py    # Firebase 연동 (주석 처리)
-│   └── statistics_summary.json # BiRefNet 모델 통계
-├── test_function.py         # 테스트 스크립트
-├── main.py                  # FastAPI 메인 앱
-└── requirements.txt         # 의존성 패키지
+http://localhost:8000/docs
 ```
 
-## 향후 계획
+## API Endpoints
 
-1. Firebase 연동 완료
-2. 성능 최적화
-3. 배치 처리 지원
-4. 웹 인터페이스 추가
+### Preprocessing Endpoints
 
-## 라이센스
+- `POST /api/preprocess/human-parsing`: 업로드된 이미지에 대해 인체 파싱 수행
+- `POST /api/preprocess/densepose`: 이미지에 DensePose 분석 적용
+- `POST /api/preprocess/pose-estimation`: 이미지에서 포즈 키포인트 추출
+- `POST /api/preprocess/mask-generation`: 의류 카테고리 마스크 생성
 
-이 프로젝트는 MIT 라이센스를 따릅니다.
+### Virtual Try-On Endpoints
+
+- `POST /api/tryon`: 가상 피팅을 위한 주요 엔드포인트
+- `GET /api/tryon/{tryon_id}`: 특정 피팅 결과 조회
+
+## Implementation Details
+
+### Image Processing Pipeline
+
+1. **인체 파싱**: 인체를 다양한 의미론적 부분으로 분할
+2. **포즈 추정**: OpenPose를 사용하여 골격 키포인트 추출
+3. **DensePose**: 2D 이미지 픽셀을 3D 신체 표면에 매핑
+4. **마스크 생성**: 대상 의류 영역에 대한 마스크 생성
+5. **가상 피팅**: 사실적인 의류 전송을 위한 IDM-VTON 확산 모델 적용
+
+### Model Architecture
+
+시스템은 주로 Stable Diffusion XL을 기반으로 한 IDM-VTON 모델을 사용하며, 다음과 같은 커스텀 컴포넌트를 포함합니다:
+
+- 의류 특징 추출을 위한 수정된 UNet 아키텍처
+- 의류 정렬을 위한 특수 어텐션 프로세서
+- 잠재 공간 압축 및 재구성을 위한 VAE
+
+## Development
+
+### Adding New Features
+
+새 기능을 추가하려면:
+
+1. 적절한 모듈에 기능 구현
+2. 라우터에 필요한 API 엔드포인트 추가
+3. 문서 업데이트
+
+### Testing
+
+다음과 같이 테스트 실행:
+
+```bash
+pytest tests/
+```
+
+## License
+
+이 프로젝트는 CC BY-NC-SA (Creative Commons Attribution-NonCommercial-ShareAlike) 라이선스를 따릅니다.
+
+- **저작자 표시(BY)**: 원작자를 적절히 표시해야 합니다.
+- **비영리(NC)**: 상업적 목적으로 사용할 수 없습니다.
+- **동일조건변경허락(SA)**: 이 라이선스와 동일한 조건으로 2차 저작물을 배포해야 합니다.
+
+## Original Author
+
+이 프로젝트는 다음 원본 프로젝트를 기반으로 합니다:
+- **원작자**: yisol
+- **원본 프로젝트**: [IDM-VTON](https://github.com/yisol/IDM-VTON)
+
+## Acknowledgements
+
+- 가상 피팅을 위한 IDM-VTON 모델
+- 포즈 추정을 위한 OpenPose
+- 밀도 높은 인체 포즈 추정을 위한 DensePose
+- 세그멘테이션을 위한 인체 파싱 모델
+
+## Contact
+
+[연락처 정보 미제공]
