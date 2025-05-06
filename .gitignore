@@ -62,3 +62,6 @@ IDM-VTON-main
 models
 *.jpg
 *.png
+*.yaml
+lastBackup
+app
