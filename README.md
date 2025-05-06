@@ -16,8 +16,8 @@ TryOnAPI는 최첨단 딥러닝 모델을 활용하여 사실적인 의류 가�
 
 - Python 3.8 이상
 - CUDA 호환 GPU (권장)
-- 최적의 성능을 위한 8GB 이상의 VRAM
-- 16GB 이상의 RAM
+- 16GB 이상의 VRAM
+- RTX 4060ti 16GB 기준 평균 12분 소요
 
 ## Installation
 
@@ -29,29 +29,10 @@ conda create -n tryonapi python=3.8
 conda activate tryonapi
 
 # 요구사항 설치
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
 pip install -r requirements.txt
-```
-
-### Required Dependencies
-
-```
-Pillow==11.1.0
-opencv-python==4.11.0
-diffusers==0.25.1
-einops==0.8.1
-fastapi==0.115.12
-fvcore==0.1.5.post20221221
-matplotlib==3.10.1
-numpy==1.26.1
-onnxruntime==1.21.1
-pycocotools==2.0.8
-pydantic==2.11.3
-pydantic_settings==2.8.1
-torch==2.6.0
-torchvision==0.21.0
-transformers==4.39.3
-uvicorn==0.23.2
-PyYAML==6.0.2
 ```
 
 ### Model Setup
