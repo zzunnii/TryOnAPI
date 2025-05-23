@@ -5,12 +5,10 @@ IDM-VTON을 FastAPI로 구현한 가상 피팅 API 서비스입니다.
 ## Test
 ## 🖼️ 가상 피팅 결과 예시
 
-| 원본 이미지 (Person)               | 착용 의류 (Clothing) | 결과 이미지 (Try-On Result) |
-|-------------------------------|-----------------------|-------------------------------|
-| ![](![img_1](https://github.com/user-attachments/assets/0b5a3efa-aba0-4fb3-9f16-7fc95f013de2)
-) | ![](![sample](https://github.com/user-attachments/assets/214c1224-9a54-41bd-92f2-d0cfb8ca385a)
-) | ![](![img](https://github.com/user-attachments/assets/10e5dfdb-804c-4047-bd6c-3805239407bc)
-) |
+| 원본 이미지 (Person) | 착용 의류 (Clothing) | 결과 이미지 (Try-On Result) |
+|-----------------------|-----------------------|-------------------------------|
+| ![](https://github.com/user-attachments/assets/0b5a3efa-aba0-4fb3-9f16-7fc95f013de2) | ![](https://github.com/user-attachments/assets/214c1224-9a54-41bd-92f2-d0cfb8ca385a) | ![](https://github.com/user-attachments/assets/10e5dfdb-804c-4047-bd6c-3805239407bc) |
+
 
 ## 환경 요구사항
 
